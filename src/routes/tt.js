@@ -39,6 +39,7 @@ router.get('/me', async (req, res) => {
 
 router.get('/stats', async (req, res) => {
   try {
+    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
     const timeline = await user(req, res);
 
     const raw = timeline.data.map(tweet => {
@@ -55,6 +56,10 @@ router.get('/stats', async (req, res) => {
     for(let i = 0; i < raw.length; i++) {
       let item = raw[i]
       let key = moment.tz(item.created, 'ddd MMM DD HH:mm:ss ZZ YYYY', 'UTC').format('HH')
+      key = String(transformToLocalTime(parseInt(key), offset)).padStart(2, '0')
+
+      debug(key)
+
       if(frequency[key]) {
         frequency[key] = (frequency[key] + item.rts + item.favs)
       } else {
@@ -80,7 +85,12 @@ router.get('/stats', async (req, res) => {
       bestTime: maxKey
     }
 
-    debug(timeline)
+    // debug(result.frequency)
+    // debug(result.count)
+    // debug(result.rts)
+    // debug(result.favs)
+    // debug(result.period)
+    // debug(result.bestTime)
 
     res.json(result)
     
@@ -90,6 +100,15 @@ router.get('/stats', async (req, res) => {
     res.status(500).json(error)
   }
 })
+
+function transformToLocalTime(time, timeZoneOffset) {
+  // debug(`bef ${time}`)
+  if(timeZoneOffset === 0) return time;
+  let result = time - Math.trunc(timeZoneOffset / 60);
+  time = result < 0 ? (24 + result) : result;
+  // debug(`aft ${time}`)
+  return time
+}
 
 async function user(req, res) {
   const params = { tweet_mode: 'extended', count: 10 }
@@ -104,7 +123,7 @@ async function user(req, res) {
     accessToken = req.header('X-Access-Token')
     accessTokenSecret = req.header('X-Access-Token-Secret')
 
-    params.count = 100
+    params.count = 200
   }
 
   const client = new Twitter({
