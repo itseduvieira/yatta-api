@@ -1,0 +1,21 @@
+{
+  "name": "jatta",
+  "version": "0.0.1",
+  "scripts": {
+    "start": "node bin/www",
+    "debug": "DEBUG=* supervisor bin/www"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "debug": "^4.1.1",
+    "express": "^4.17.1",
+    "firebase-admin": "^9.2.0",
+    "moment": "^2.29.1",
+    "moment-timezone": "^0.5.33",
+    "mongoose": "^5.10.7",
+    "twit": "^2.2.11"
+  },
+  "devDependencies": {
+    "supervisor": "^0.12.0"
+  }
+}

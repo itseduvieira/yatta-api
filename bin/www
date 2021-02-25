@@ -1,0 +1,33 @@
+#!/usr/bin/env node
+
+'use strict'
+
+const app = require('../src/app')
+const http = require('http')
+const debug = require('debug')('jat:api')
+
+const val = process.env.PORT || '3001'
+const port = parseInt(val, 10)
+
+app.set('port', (val, port) => {
+  if (isNaN(port)) {
+    return val
+  }
+
+  if (port >= 0) {
+    return port
+  }
+
+  return false
+})
+
+const server = http.createServer(app)
+server.listen(port)
+
+server.on('listening', () => {
+  let addr = server.address()
+  let bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port
+  debug('Listening on ' + bind)
+})
