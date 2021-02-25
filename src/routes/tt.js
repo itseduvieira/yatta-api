@@ -74,7 +74,8 @@ router.get('/stats', async (req, res) => {
       raw: raw,
       count: raw.length,
       frequency: frequency,
-      interactions: raw.reduce((acc, item) => acc + item.rts + item.favs, 0),
+      rts: raw.reduce((acc, item) => acc + item.rts, 0),
+      favs: raw.reduce((acc, item) => acc + item.favs, 0),
       period: period,
       bestTime: maxKey
     }
