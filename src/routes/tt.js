@@ -49,7 +49,7 @@ router.get('/stats', async (req, res) => {
 
       const lastTweet = tweets[tweets.length - 1]
 
-      if(!lastTweet) break;
+      if(!lastTweet || maxId === lastTweet.id) break;
 
       data.push(...tweets)
 
