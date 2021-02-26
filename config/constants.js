@@ -10,7 +10,7 @@ module.exports = {
     twitter: {
         consumerKey: 'lrDW5GMyDMthiFvcFFqIsYJx3',
         consumerSecret: '7nvaezYRoXgm8sePIvMTbFK8yKaar76byAus0NlzO1OYML3zag',
-        accessToken: '72183014-acUD418bXX3RrfVV9x3bCNUn53pvcGLFlgcvQgH6a',
-        accessTokenSecret: 'ZBCJZK7PlovehFWJbz5C5GwmroybzvbrSC9U9ucCh8B4l'
+        accessToken: '72183014-EAwqnjnQyjM5EG5o1QQckk8XK31QVHHLK0268LPwe',
+        accessTokenSecret: 'LTX55N4fSAoxwdQpp7jCDfX7YlmtYB7ZRlVKzwznGykWB'
     }
 }

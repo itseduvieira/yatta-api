@@ -58,7 +58,7 @@ router.get('/stats', async (req, res) => {
       let key = moment.tz(item.created, 'ddd MMM DD HH:mm:ss ZZ YYYY', 'UTC').format('HH')
       key = String(transformToLocalTime(parseInt(key), offset)).padStart(2, '0')
 
-      debug(key)
+      // debug(key)
 
       if(frequency[key]) {
         frequency[key] = (frequency[key] + item.rts + item.favs)
@@ -119,7 +119,8 @@ async function user(req, res) {
 
   if(req.header('X-Access-Token') && 
       req.header('X-Access-Token-Secret') && 
-      req.header('X-Access-Token') != 'demo') {
+      req.header('X-Access-Token') !== 'demo' &&
+      req.header('X-Access-Token-Secret') !== 'demo') {
     accessToken = req.header('X-Access-Token')
     accessTokenSecret = req.header('X-Access-Token-Secret')
 
