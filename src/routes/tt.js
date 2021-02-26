@@ -40,9 +40,23 @@ router.get('/me', async (req, res) => {
 router.get('/stats', async (req, res) => {
   try {
     const offset = req.query.offset ? parseInt(req.query.offset) : 0;
-    const timeline = await user(req, res);
+    
+    const data = [];
+    let maxId;
+    
+    for(let i = 0; i < 5; i++) {
+      const tweets = (await user(req, res, maxId)).data
 
-    const raw = timeline.data.map(tweet => {
+      const lastTweet = tweets[tweets.length - 1]
+
+      if(!lastTweet) break;
+
+      data.push(...tweets)
+
+      maxId = lastTweet.id
+    }    
+
+    const raw = data.map(tweet => {
       return { 
         tweet: tweet.text,
         created: tweet.created_at,
@@ -120,7 +134,7 @@ router.get('/mine', async (req, res) => {
   }
 })
 
-async function user(req, res) {
+async function user(req, res, maxId) {
   const params = { tweet_mode: 'extended', count: 10 }
   // const params = { tweet_mode: 'compat', count: 10 }
 
@@ -135,6 +149,10 @@ async function user(req, res) {
     accessTokenSecret = req.header('X-Access-Token-Secret')
 
     params.count = 200
+
+    if(maxId) {
+      params.max_id = maxId
+    }
   }
 
   const client = new Twitter({
