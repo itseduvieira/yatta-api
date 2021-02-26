@@ -110,6 +110,16 @@ function transformToLocalTime(time, timeZoneOffset) {
   return time
 }
 
+router.get('/mine', async (req, res) => {
+  try {
+    return res.json(await user(req, res))
+  } catch (error) {
+    debug(error)
+
+    res.status(500).json(error)
+  }
+})
+
 async function user(req, res) {
   const params = { tweet_mode: 'extended', count: 10 }
   // const params = { tweet_mode: 'compat', count: 10 }
