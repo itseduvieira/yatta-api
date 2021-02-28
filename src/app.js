@@ -13,7 +13,39 @@ app.use(bodyParser.json({limit: '50mb'}))
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }))
 app.use(require('cors')({ origin: '*' }))
 
-app.use('/tt', require('./routes/tt'))
+const auth = async (req, res, next) => {
+  if(req.header('X-Access-Token') && 
+      req.header('X-Access-Token-Secret') && 
+      req.header('X-Access-Token') === 'demo' &&
+      req.header('X-Access-Token-Secret') === 'demo') {
+    next()
+  } else {
+    const auth = req.headers["authorization"]
+    const parts = auth ? auth.split(' ') : []
+
+    if(!auth || parts[0] !== 'Bearer') {
+      res.status(401).json({
+          message: 'Unauthorized'
+      })
+    } else {
+      try {
+        // await admin
+        //   .auth()
+        //   .verifyIdToken(parts[1])
+
+        next()
+      } catch(error) {
+        debug(error)
+
+        res.status(401).json({
+          message: 'Unauthorized'
+        })
+      }
+    }
+  }
+}
+
+app.use('/tt', auth, require('./routes/tt'))
 
 // require('./helpers/db')
 
