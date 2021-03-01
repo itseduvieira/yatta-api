@@ -9,36 +9,18 @@ const moment = require('moment-timezone')
 
 router.get('/me', async (req, res) => {
   try {
-    let accessToken = constants.twitter.accessToken
-    let accessTokenSecret = constants.twitter.accessTokenSecret
-
-    if(req.header('X-Access-Token') && req.header('X-Access-Token-Secret')) {
-      accessToken = req.header('X-Access-Token')
-      accessTokenSecret = req.header('X-Access-Token-Secret')
-    }
-
-    const client = new Twitter({
-      consumer_key: constants.twitter.consumerKey,
-      consumer_secret: constants.twitter.consumerSecret,
-      access_token: accessToken,
-      access_token_secret: accessTokenSecret
-    })
-
-    const me = await client.get(`account/verify_credentials`)
-
-    debug(me)
-
-    res.json(me)
-    
-  } catch (error) {
+    return res.json(await me(req, res))
+  } catch(error) {
     debug(error)
 
     res.status(500).json(error)
   }
+  
 })
 
 router.get('/stats', async (req, res) => {
   try {
+
     const offset = req.query.offset ? parseInt(req.query.offset) : 0;
     
     const data = [];
@@ -54,14 +36,29 @@ router.get('/stats', async (req, res) => {
       data.push(...tweets)
 
       maxId = lastTweet.id
-    }    
+    }
+
+    const profile = await me(req, res)
+    
 
     const raw = data.map(tweet => {
+      let rts = 0
+
+      if(tweet.full_text) {
+        if(tweet.full_text.startsWith(`RT @${profile.data.screenName}`)) {
+          rts = tweet.retweet_count - 1
+        } else if (tweet.full_text.startsWith('RT')) {
+          rts = 0
+        } else {
+          rts = tweet.retweet_count
+        }
+      }
+
       return { 
-        tweet: tweet.text,
+        tweet: tweet.full_text,
         created: tweet.created_at,
         favs: tweet.favorite_count,
-        rts: tweet.text && tweet.text.startsWith('RT') ? tweet.retweet_count - 1 : tweet.retweet_count
+        rts: rts
       }
     })
 
@@ -163,6 +160,27 @@ async function user(req, res, maxId) {
   })
 
   return await client.get(`statuses/user_timeline`, params)
+}
+
+async function me(req, res) {
+  let accessToken = constants.twitter.accessToken
+  let accessTokenSecret = constants.twitter.accessTokenSecret
+
+  if(req.header('X-Access-Token') && req.header('X-Access-Token-Secret')) {
+    accessToken = req.header('X-Access-Token')
+    accessTokenSecret = req.header('X-Access-Token-Secret')
+  }
+
+  const client = new Twitter({
+    consumer_key: constants.twitter.consumerKey,
+    consumer_secret: constants.twitter.consumerSecret,
+    access_token: accessToken,
+    access_token_secret: accessTokenSecret
+  })
+
+  debug(me)
+
+  return await client.get(`account/verify_credentials`)
 }
 
 module.exports = router
