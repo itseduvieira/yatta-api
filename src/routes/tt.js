@@ -2,7 +2,7 @@
 
 const express = require('express')
 const router = express.Router()
-const debug = require('debug')('jat:api')
+const debug = require('debug')('yat:api')
 const Twitter = require('twit')
 const constants = require('../../config/constants')
 const moment = require('moment-timezone')
@@ -36,18 +36,13 @@ router.get('/stats', async (req, res) => {
       data.push(...tweets)
 
       maxId = lastTweet.id
-    }
-
-    const profile = await me(req, res)
-    
+    }    
 
     const raw = data.map(tweet => {
       let rts = 0
 
       if(tweet.full_text) {
-        if(tweet.full_text.startsWith(`RT @${profile.data.screenName}`)) {
-          rts = tweet.retweet_count - 1
-        } else if (tweet.full_text.startsWith('RT')) {
+        if (tweet.full_text.startsWith('RT')) {
           rts = 0
         } else {
           rts = tweet.retweet_count
@@ -96,12 +91,12 @@ router.get('/stats', async (req, res) => {
       bestTime: maxKey
     }
 
-    // debug(result.frequency)
-    // debug(result.count)
-    // debug(result.rts)
-    // debug(result.favs)
-    // debug(result.period)
-    // debug(result.bestTime)
+    debug(result.frequency)
+    debug(result.count)
+    debug(result.rts)
+    debug(result.favs)
+    debug(result.period)
+    debug(result.bestTime)
 
     res.json(result)
     
