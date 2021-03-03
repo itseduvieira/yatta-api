@@ -64,8 +64,6 @@ router.get('/stats', async (req, res) => {
       let key = moment.tz(item.created, 'ddd MMM DD HH:mm:ss ZZ YYYY', 'UTC').format('HH')
       key = String(transformToLocalTime(parseInt(key), offset)).padStart(2, '0')
 
-      // debug(key)
-
       if(frequency[key]) {
         frequency[key] = (frequency[key] + item.rts + item.favs)
       } else {
@@ -127,8 +125,7 @@ router.get('/mine', async (req, res) => {
 })
 
 async function user(req, res, maxId) {
-  const params = { tweet_mode: 'extended', count: 10 }
-  // const params = { tweet_mode: 'compat', count: 10 }
+  const params = { tweet_mode: 'compat', count: 50 }
 
   let accessToken = constants.twitter.accessToken
   let accessTokenSecret = constants.twitter.accessTokenSecret
