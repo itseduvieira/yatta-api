@@ -13,6 +13,7 @@
     "moment": "^2.29.1",
     "moment-timezone": "^0.5.33",
     "mongoose": "^5.10.7",
+    "stripe": "^8.137.0",
     "twit": "^2.2.11"
   },
   "devDependencies": {

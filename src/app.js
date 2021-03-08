@@ -49,7 +49,9 @@ const auth = async (req, res, next) => {
 }
 
 app.use('/tt', auth, require('./routes/tt'))
+// app.use('/payment', auth, require('./routes/payment'))
+app.use('/payment', require('./routes/payment'))
 
-debug(constants.twitter)
+debug(constants)
 
 module.exports = app
