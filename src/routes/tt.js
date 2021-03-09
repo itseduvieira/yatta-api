@@ -7,9 +7,14 @@ const Twitter = require('twit')
 const constants = require('../../config/constants')
 const moment = require('moment-timezone')
 
+const stripe = require('stripe')(require('../../config/constants').stripe.secret)
+
 router.get('/me', async (req, res) => {
   try {
-    return res.json(await me(req, res))
+    const profile = await me(req, res)
+    profile.subscription = await subscriptionStatus(profile.data)
+
+    res.json(profile.data)
   } catch(error) {
     debug(error)
 
@@ -106,11 +111,9 @@ router.get('/stats', async (req, res) => {
 })
 
 function transformToLocalTime(time, timeZoneOffset) {
-  // debug(`bef ${time}`)
   if(timeZoneOffset === 0) return time;
   let result = time - Math.trunc(timeZoneOffset / 60);
   time = result < 0 ? (24 + result) : result;
-  // debug(`aft ${time}`)
   return time
 }
 
@@ -173,6 +176,42 @@ async function me(req, res) {
   debug(me)
 
   return await client.get(`account/verify_credentials`)
+}
+
+async function subscriptionStatus(me) {
+  const result = {
+    wasCustomer: false,
+    type: null,
+    active: false
+  }
+
+  let customer
+
+  try {
+    customer = await stripe.customers.retrieve(me.id_str, {
+      expand: ['subscriptions']
+    })
+
+    result.wasCustomer = true
+
+    if(customer.subscriptions.length > 0) {
+      debug(customer.subscriptions[0])
+    }
+
+    debug(customer)
+  } catch(error) {
+    debug(error)
+
+    if(error.statusCode === 404) {
+      customer = await stripe.customers.create({
+        id: me.id
+      })
+    
+      debug(customer)
+    }
+  }
+
+  return result
 }
 
 module.exports = router
