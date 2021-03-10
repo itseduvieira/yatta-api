@@ -6,13 +6,16 @@ const debug = require('debug')('yat:api')
 const Twitter = require('twit')
 const constants = require('../../config/constants')
 const moment = require('moment-timezone')
+const admin = require('firebase-admin')
 
 const stripe = require('stripe')(require('../../config/constants').stripe.secret)
 
 router.get('/me', async (req, res) => {
   try {
     const profile = await me(req, res)
-    profile.data.subscription = await subscriptionStatus(profile.data)
+    const uid = req.header('X-Auth-Uid')
+
+    profile.data.subscription = await subscriptionStatus(profile.data, uid)
 
     res.json(profile.data)
   } catch(error) {
@@ -178,39 +181,47 @@ async function me(req, res) {
   return await client.get(`account/verify_credentials`)
 }
 
-async function subscriptionStatus(me) {
+async function subscriptionStatus(me, uid) {
   const result = {
+    customerId: null,
     wasCustomer: false,
     type: null,
-    active: false
+    status: null
   }
 
   let customer
 
   try {
-    customer = await stripe.customers.retrieve(me.id_str, {
-      expand: ['subscriptions']
-    })
+    const customClaims = (await admin.auth().getUser(uid)).customClaims
 
-    result.wasCustomer = true
+    if(customClaims && customClaims.customerId) {
+      customer = await stripe.customers.retrieve(customClaims.customerId, {
+        expand: ['subscriptions']
+      })
 
-    if(customer.subscriptions && customer.subscriptions.length > 0) {
-      debug(customer.subscriptions[0])
+      result.customerId = customClaims.customerId
+
+      result.wasCustomer = true
+      
+      if(customer.subscriptions && customer.subscriptions.data.length > 0) {
+        result.status = customer.subscriptions.data[0].status
+        result.type = customer.subscriptions.data[0].plan.id
+      }
+    } else {
+      customer = await stripe.customers.create({
+        name: me.screen_name,
+        metadata: {
+          firebase: uid,
+          twitter: `@${me.id_str}`
+        }
+      })
+
+      await admin.auth().setCustomUserClaims(uid, { customerId: customer.id })
+
+      result.customerId = customer.id
     }
-
-    debug(customer)
   } catch(error) {
     debug(error)
-
-    if(error.statusCode === 404) {
-      customer = await stripe.customers.create({
-        id: me.id_str,
-        name: me.name,
-        email: me.screen_name
-      })
-    
-      debug(customer)
-    }
   }
 
   return result
