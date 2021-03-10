@@ -12,7 +12,7 @@ const stripe = require('stripe')(require('../../config/constants').stripe.secret
 router.get('/me', async (req, res) => {
   try {
     const profile = await me(req, res)
-    profile.subscription = await subscriptionStatus(profile.data)
+    profile.data.subscription = await subscriptionStatus(profile.data)
 
     res.json(profile.data)
   } catch(error) {
@@ -194,7 +194,7 @@ async function subscriptionStatus(me) {
 
     result.wasCustomer = true
 
-    if(customer.subscriptions.length > 0) {
+    if(customer.subscriptions && customer.subscriptions.length > 0) {
       debug(customer.subscriptions[0])
     }
 
@@ -204,7 +204,9 @@ async function subscriptionStatus(me) {
 
     if(error.statusCode === 404) {
       customer = await stripe.customers.create({
-        id: me.id
+        id: me.id_str,
+        name: me.name,
+        email: me.screen_name
       })
     
       debug(customer)
