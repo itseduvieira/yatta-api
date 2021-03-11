@@ -186,8 +186,7 @@ async function subscriptionStatus(me, uid) {
     customerId: null,
     wasCustomer: false,
     type: null,
-    status: null,
-    customerPortal: null
+    status: null
   }
 
   let customer
@@ -207,12 +206,6 @@ async function subscriptionStatus(me, uid) {
       if(customer.subscriptions && customer.subscriptions.data.length > 0) {
         result.status = customer.subscriptions.data[0].status
         result.type = customer.subscriptions.data[0].plan.id
-
-        const portal = await stripe.billingPortal.sessions.create({
-          customer: result.customerId
-        })
-
-        result.customerPortal = portal.url
       }
     } else {
       customer = await stripe.customers.create({

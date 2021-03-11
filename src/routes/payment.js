@@ -51,4 +51,14 @@ router.post('/subscription', async (req, res) => {
   res.send(subscription)
 })
 
+router.get('/portal/:customerId', async (req, res) => {
+  const portal = await stripe.billingPortal.sessions.create({
+    customer: req.params.customerId
+  })
+
+  res.json({
+    url: portal.url
+  })
+})
+
 module.exports = router
