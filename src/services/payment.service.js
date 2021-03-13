@@ -23,6 +23,11 @@ const createSubscription = async (paymentMethodId, customerId, priceId) => {
     expand: ['latest_invoice.payment_intent'],
   });
 
+  const paymentIntent = subscription.latest_invoice.payment_intent
+  if(paymentIntent.next_action && paymentIntent.next_action.type === 'use_stripe_sdk') {
+    
+  }
+
   return subscription
 }
 
