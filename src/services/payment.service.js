@@ -3,19 +3,19 @@
 const admin = require('firebase-admin')
 const stripe = require('stripe')(require('../../config/constants').stripe.secret)
 
+const twitterService = require('./twitter.service')
+
 const createSubscription = async (paymentMethodId, customerId, priceId) => {
   await stripe.paymentMethods.attach(paymentMethodId, {
     customer: customerId,
   });
 
-  await stripe.customers.update(
-    customerId,
+  await stripe.customers.update(customerId,
     {
       invoice_settings: {
         default_payment_method: paymentMethodId,
       },
-    }
-  )
+    })
 
   const subscription = await stripe.subscriptions.create({
     customer: customerId,
@@ -55,6 +55,13 @@ const getSubscriptionStatus = async (screenName, twitterId, uid) => {
       result.type = customer.subscriptions.data[0].plan.id
     }
   } else {
+    if(!screenName || !twitterId) {
+      const profile = await twitterService.getProfile(accessToken, accessTokenSecret)
+
+      screenName = profile.data.screen_name
+      twitterId = profile.data.id_str
+    }
+
     customer = await stripe.customers.create({
       name: `@${screenName}`,
       metadata: {

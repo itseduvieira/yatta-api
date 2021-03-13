@@ -2,28 +2,9 @@
 
 const express = require('express')
 const router = express.Router()
-const debug = require('debug')('yat:api')
 const moment = require('moment-timezone')
 
 const twitterService = require('../services/twitter.service')
-const paymentService = require('../services/payment.service')
-
-router.get('/me', async (req, res) => {
-  const accessToken = req.header('X-Access-Token')
-  const accessTokenSecret = req.header('X-Access-Token-Secret')
-  const uid = req.header('X-Auth-Uid')
-
-  const profile = await twitterService.getProfile(accessToken, accessTokenSecret)
-
-  const screenName = profile.data.screen_name
-  const twitterId = profile.data.id_str
-
-  if(uid) {
-    profile.data.subscription = await paymentService.getSubscriptionStatus(screenName, twitterId, uid)
-  }
-
-  res.json(profile.data)
-})
 
 router.get('/stats', async (req, res) => {
   const accessToken = req.header('X-Access-Token')
@@ -100,17 +81,17 @@ router.get('/stats', async (req, res) => {
   res.json(result)
 })
 
+router.get('/timeline', async (req, res) => {
+  const userTimeline = await twitterService.getUserTimeline(req, res)
+  
+  return res.json(userTimeline.data)
+})
+
 function transformToLocalTime(time, timeZoneOffset) {
   if(timeZoneOffset === 0) return time;
   let result = time - Math.trunc(timeZoneOffset / 60);
   time = result < 0 ? (24 + result) : result;
   return time
 }
-
-router.get('/timeline', async (req, res) => {
-  const userTimeline = await twitterService.getUserTimeline(req, res)
-  
-  return res.json(userTimeline.data)
-})
 
 module.exports = router

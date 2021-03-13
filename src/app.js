@@ -3,6 +3,8 @@
 const admin = require('firebase-admin')
 const debug = require('debug')('yat:api')
 
+const paymentService = require('./services/payment.service')
+
 admin.initializeApp({
   credential: admin.credential.cert(require('../config/serviceAccountKey.json')),
   databaseURL: require('../config/constants').firebase.database
@@ -27,33 +29,41 @@ const auth = async (req, res, next) => {
     
     next()
   } else {
-    const auth = req.headers["authorization"]
+    const auth = req.headers['authorization']
     const parts = auth ? auth.split(' ') : []
 
-    if(!auth || parts[0] !== 'Bearer') {
-      res.status(401).json({
-          message: 'Unauthorized'
-      })
-    } else {
-      try {
+    try {
+      if(!auth || parts[0] !== 'Bearer') {
+        throw Error('No credentials provided')
+      } else {
         // await admin
         //   .auth()
         //   .verifyIdToken(parts[1])
 
-        next()
-      } catch(error) {
-        debug(error)
+        const uid = req.header('x-auth-uid')
+        if(uid) {
+          const subscription = await paymentService.getSubscriptionStatus(null, null, uid)
 
-        res.status(401).json({
-          message: 'Unauthorized'
-        })
-      }
+          if(subscription.status === 'active') {
+            next()
+          } else {
+            res.status(402).json({ 
+              message: 'No active subscription found', 
+              subscription: subscription
+            })
+          }
+        }
+      } 
+    } catch(error) {
+      debug(error)
+
+      res.status(401).json({ message: 'Unauthorized' })
     }
   }
 }
 
 app.use('/twitter', auth, require('./routes/twitter.api'))
-// app.use('/payment', auth, require('./routes/payment.api'))
+app.use('/profile', require('./routes/profile.api'))
 app.use('/payment', require('./routes/payment.api'))
 
 debug(constants)
