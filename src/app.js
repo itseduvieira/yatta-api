@@ -17,10 +17,14 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }))
 app.use(require('cors')({ origin: '*' }))
 
 const auth = async (req, res, next) => {
-  if(req.header('X-Access-Token') && 
-      req.header('X-Access-Token-Secret') && 
-      req.header('X-Access-Token') === 'demo' &&
-      req.header('X-Access-Token-Secret') === 'demo') {
+  if(req.header('x-access-token') && 
+      req.header('x-access-token-secret') && 
+      req.header('x-access-token') === 'demo' &&
+      req.header('x-access-token-secret') === 'demo') {
+    
+    delete req.headers['x-access-token']
+    delete req.headers['x-access-token-secret']
+    
     next()
   } else {
     const auth = req.headers["authorization"]
@@ -48,9 +52,9 @@ const auth = async (req, res, next) => {
   }
 }
 
-app.use('/tt', auth, require('./routes/tt'))
-// app.use('/payment', auth, require('./routes/payment'))
-app.use('/payment', require('./routes/payment'))
+app.use('/twitter', auth, require('./routes/twitter.api'))
+// app.use('/payment', auth, require('./routes/payment.api'))
+app.use('/payment', require('./routes/payment.api'))
 
 debug(constants)
 
