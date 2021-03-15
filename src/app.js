@@ -22,7 +22,9 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }))
 
 app.use(function (req, res, next) {
 
-    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:4200')
+    res.set('Access-Control-Expose-Headers', 'Access-Control-Allow-Origin')
+    
+    res.setHeader('Access-Control-Allow-Origin', '*')
 
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE')
 
