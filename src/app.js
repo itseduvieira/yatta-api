@@ -17,11 +17,8 @@ const constants = require('../config/constants')
 app.use(bodyParser.json({limit: '50mb'}))
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }))
 
-app.use(require('cors')({
-    credentials: true,
-    origin: true,
-    optionsSuccessStatus: 200
-})) 
+app.use(cors())
+app.options('*', cors())
 
 const auth = async (req, res, next) => {
   if(req.header('x-access-token') && 
