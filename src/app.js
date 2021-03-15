@@ -2,6 +2,7 @@
 
 const admin = require('firebase-admin')
 const debug = require('debug')('yat:api')
+const cors = require('cors')
 
 const paymentService = require('./services/payment.service')
 
