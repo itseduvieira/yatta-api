@@ -6,6 +6,21 @@ const router = express.Router()
 const twitterService = require('../services/twitter.service')
 const paymentService = require('../services/payment.service')
 
+router.use((req, res, next) => {
+
+    res.set('Access-Control-Expose-Headers', 'Access-Control-Allow-Origin,x-access-token,x-access-token-secret,x-auth-uid,authorization')
+
+    res.setHeader('Access-Control-Allow-Origin', '*')
+
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE')
+
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,x-access-token,x-access-token-secret,x-auth-uid,authorization')
+
+    res.setHeader('Access-Control-Allow-Credentials', true)
+
+    next();
+})
+
 router.get('/me', async (req, res) => {
   const accessToken = req.header('x-access-token')
   const accessTokenSecret = req.header('x-access-token-secret')

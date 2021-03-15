@@ -4,7 +4,7 @@
 
 const app = require('../src/app')
 const http = require('http')
-const debug = require('debug')('jat:api')
+const debug = require('debug')('yat:api')
 
 const val = process.env.PORT || '3001'
 const port = parseInt(val, 10)
