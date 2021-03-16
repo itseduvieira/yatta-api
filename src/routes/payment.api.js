@@ -35,4 +35,15 @@ router.post('/checkout', async (req, res) => {
     res.json({ sessionId: id })
 })
 
+router.put('/customer', async (req, res) => {
+    const screenName = req.body.screenName
+    const twitterId = req.body.twitterId
+    const sessionId = req.body.sessionId
+    const uid = req.body.uid
+
+    const customer = await paymentService.updateCustomer(sessionId, screenName, twitterId, uid)
+
+    res.json({ customer: customer })
+})
+
 module.exports = router

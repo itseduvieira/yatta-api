@@ -3,8 +3,6 @@
 const admin = require('firebase-admin')
 const stripe = require('stripe')(require('../../config/constants').stripe.secret)
 
-const twitterService = require('./twitter.service')
-
 const createSubscription = async (paymentMethodId, customerId, priceId) => {
     const paymentMethods = await stripe.paymentMethods.list({
         customer: customerId,
@@ -55,14 +53,34 @@ const generateCheckoutId = async (priceId, returnUrl) => {
                 quantity: 1,
             },
         ],
-        success_url: `${returnUrl}?session_id={CHECKOUT_SESSION_ID}`,
+        success_url: `${returnUrl}/#/dash/session?id={CHECKOUT_SESSION_ID}`,
         cancel_url: returnUrl
     })
 
     return session.id
 }
 
-const getSubscriptionStatus = async (screenName, twitterId, uid) => {
+const updateCustomer = async (sessionId, screenName, twitterId, uid) => {
+    const session = await stripe.checkout.sessions.retrieve(sessionId)
+
+    const customer = await stripe.customers.update(session.customer, {
+        name: `@${screenName}`,
+        metadata: {
+            firebase: uid,
+            twitter: twitterId
+        }
+    })
+
+    await admin.auth().setCustomUserClaims(uid, { customerId: session.customer })
+
+    const subscriptionStatus = await getSubscriptionStatus(uid)
+
+    customer.subscriptionStatus = subscriptionStatus
+
+    return customer
+}
+
+const getSubscriptionStatus = async (uid) => {
     const result = {}
 
     let customer
@@ -76,31 +94,10 @@ const getSubscriptionStatus = async (screenName, twitterId, uid) => {
 
         result.customerId = customClaims.customerId
 
-        result.wasCustomer = true
-
         if (customer.subscriptions && customer.subscriptions.data.length > 0) {
             result.status = customer.subscriptions.data[0].status
             result.type = customer.subscriptions.data[0].plan.id
         }
-    } else {
-        if (!screenName || !twitterId) {
-            const profile = await twitterService.getProfile(accessToken, accessTokenSecret)
-
-            screenName = profile.data.screen_name
-            twitterId = profile.data.id_str
-        }
-
-        customer = await stripe.customers.create({
-            name: `@${screenName}`,
-            metadata: {
-                firebase: uid,
-                twitter: twitterId
-            }
-        })
-
-        await admin.auth().setCustomUserClaims(uid, { customerId: customer.id })
-
-        result.customerId = customer.id
     }
 
     return result
@@ -110,5 +107,6 @@ module.exports = {
     createSubscription: createSubscription,
     generatePortalUrl: generatePortalUrl,
     generateCheckoutId: generateCheckoutId,
-    getSubscriptionStatus: getSubscriptionStatus
+    getSubscriptionStatus: getSubscriptionStatus,
+    updateCustomer: updateCustomer
 }

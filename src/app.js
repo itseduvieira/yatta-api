@@ -44,7 +44,7 @@ const auth = async (req, res, next) => {
 
         const uid = req.header('x-auth-uid')
         if(uid) {
-          const subscription = await paymentService.getSubscriptionStatus(null, null, uid)
+          const subscription = await paymentService.getSubscriptionStatus(uid)
 
           if(subscription.status === 'active') {
             next()

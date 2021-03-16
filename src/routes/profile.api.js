@@ -13,11 +13,8 @@ router.get('/me', async (req, res) => {
 
   const profile = await twitterService.getProfile(accessToken, accessTokenSecret)
 
-  const screenName = profile.data.screen_name
-  const twitterId = profile.data.id_str
-
   if(uid) {
-    profile.data.subscription = await paymentService.getSubscriptionStatus(screenName, twitterId, uid)
+    profile.data.subscription = await paymentService.getSubscriptionStatus(uid)
   }
 
   res.json(profile.data)
