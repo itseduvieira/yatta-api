@@ -45,6 +45,23 @@ const generatePortalUrl = async (customerId) => {
     return portal.url
 }
 
+const generateCheckoutId = async (priceId, returnUrl) => {
+    const session = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        payment_method_types: ['card'],
+        line_items: [
+            {
+                price: priceId,
+                quantity: 1,
+            },
+        ],
+        success_url: `${returnUrl}?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: returnUrl
+    })
+
+    return session.id
+}
+
 const getSubscriptionStatus = async (screenName, twitterId, uid) => {
     const result = {}
 
@@ -92,5 +109,6 @@ const getSubscriptionStatus = async (screenName, twitterId, uid) => {
 module.exports = {
     createSubscription: createSubscription,
     generatePortalUrl: generatePortalUrl,
+    generateCheckoutId: generateCheckoutId,
     getSubscriptionStatus: getSubscriptionStatus
 }

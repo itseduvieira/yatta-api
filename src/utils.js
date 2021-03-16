@@ -8,7 +8,9 @@ admin.initializeApp({
 });
 
 (async () => {
-    await admin.auth().setCustomUserClaims('tzMtyVIDX7Qyr3xN4mXrEkOChbr2', null)
+    await admin.auth().setCustomUserClaims('INvumKsgPmSBV0pI5DKyxAsPKoq1', {
+        customerId: 'cus_J7isakn23sw1Qz'
+    })
 
     await admin.app().delete()
 })()

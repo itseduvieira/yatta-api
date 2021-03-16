@@ -26,4 +26,13 @@ router.get('/portal/:customerId', async (req, res) => {
     res.json({ url: url })
 })
 
+router.post('/checkout', async (req, res) => {
+    const priceId = req.body.priceId
+    const returnUrl = req.body.returnUrl
+
+    const id = await paymentService.generateCheckoutId(priceId, returnUrl)
+
+    res.json({ sessionId: id })
+})
+
 module.exports = router
