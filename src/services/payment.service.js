@@ -2,17 +2,46 @@
 
 const admin = require('firebase-admin')
 const stripe = require('stripe')(require('../../config/constants').stripe.secret)
+const twitterService = require('./twitter.service')
 
-const createSubscription = async (paymentMethodId, customerId, priceId) => {
-    const paymentMethods = await stripe.paymentMethods.list({
-        customer: customerId,
-        type: 'card',
-    })
+const createSubscription = async (paymentMethodId, uid, priceId, 
+        accessToken, accessTokenSecret) => {
+    const user = await admin.auth().getUser(uid)
 
-    for(let i = 0; i < paymentMethods.data.length; i++) {
-        const method = paymentMethods.data[i]
-        
-        await stripe.paymentMethods.detach(method.id)
+    let customerId
+    
+    const customClaims = user.customClaims
+
+    if (customClaims && customClaims.customerId) {
+        customerId = customClaims.customerId
+
+        const paymentMethods = await stripe.paymentMethods.list({
+            customer: customerId,
+            type: 'card',
+        })
+    
+        for(let i = 0; i < paymentMethods.data.length; i++) {
+            const method = paymentMethods.data[i]
+            
+            await stripe.paymentMethods.detach(method.id)
+        }
+    } else {
+        const profile = await twitterService.getProfile(accessToken, accessTokenSecret)
+
+        const screenName = profile.data.screen_name
+        const twitterId = profile.data.id_str
+
+        const customer = await stripe.customers.create({
+            name: `@${screenName}`,
+            metadata: {
+                firebase: uid,
+                twitter: twitterId
+            }
+        })
+
+        await admin.auth().setCustomUserClaims(uid, { customerId: customer.id })
+
+        customerId = customer.id
     }
 
     await stripe.paymentMethods.attach(paymentMethodId, {
