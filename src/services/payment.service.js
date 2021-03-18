@@ -5,7 +5,14 @@ const stripe = require('stripe')(require('../../config/constants').stripe.secret
 const twitterService = require('./twitter.service')
 
 const createSubscription = async (paymentMethodId, uid, priceId, 
-        accessToken, accessTokenSecret) => {
+        accessToken, accessTokenSecret, couponId) => {
+    
+    let coupon
+
+    if(couponId) {
+        coupon = await stripe.coupons.retrieve(couponId)
+    }
+    
     const user = await admin.auth().getUser(uid)
 
     let customerId
@@ -44,22 +51,35 @@ const createSubscription = async (paymentMethodId, uid, priceId,
         customerId = customer.id
     }
 
-    await stripe.paymentMethods.attach(paymentMethodId, {
-        customer: customerId
-    })
-
-    await stripe.customers.update(customerId,
-        {
-            invoice_settings: {
-                default_payment_method: paymentMethodId
-            }
+    if(!coupon) {
+        await stripe.paymentMethods.attach(paymentMethodId, {
+            customer: customerId
         })
 
-    const subscription = await stripe.subscriptions.create({
-        customer: customerId,
-        items: [{ price: priceId }],
-        expand: ['latest_invoice.payment_intent']
-    })
+        await stripe.customers.update(customerId,
+            {
+                invoice_settings: {
+                    default_payment_method: paymentMethodId
+                }
+            })
+    }
+
+    let subscription
+    
+    if(coupon) {
+        subscription = await stripe.subscriptions.create({
+            customer: customerId,
+            items: [{ price: priceId }],
+            coupon: couponId,
+            expand: ['latest_invoice.payment_intent']
+        })
+    } else {
+        subscription = await stripe.subscriptions.create({
+            customer: customerId,
+            items: [{ price: priceId }],
+            expand: ['latest_invoice.payment_intent']
+        })
+    }
 
     return subscription
 }

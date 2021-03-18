@@ -7,13 +7,14 @@ const paymentService = require('../services/payment.service')
 router.post('/subscription', async (req, res) => {
     const paymentMethodId = req.body.paymentMethodId
     const priceId = req.body.priceId
+    const couponId = req.body.couponId
     const uid = req.header('x-auth-uid')
     const accessToken = req.header('x-access-token')
     const accessTokenSecret = req.header('x-access-token-secret')
 
     try {
         const subscription = await paymentService.createSubscription(paymentMethodId, uid, 
-            priceId, accessToken, accessTokenSecret)
+            priceId, accessToken, accessTokenSecret, couponId)
 
         res.send(subscription)
     } catch (error) {
