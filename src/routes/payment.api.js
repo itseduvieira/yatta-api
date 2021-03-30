@@ -50,4 +50,16 @@ router.put('/customer', async (req, res) => {
     res.json({ customer: customer })
 })
 
+router.get('/coupon/:couponId', async (req, res) => {
+    const couponId = req.params.couponId
+
+    try {
+        const coupon = await paymentService.getCoupon(couponId)
+
+        res.json({ coupon: coupon })
+    } catch(error) {
+        res.status(404).json(error);
+    }
+})
+
 module.exports = router

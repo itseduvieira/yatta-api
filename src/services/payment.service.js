@@ -10,7 +10,7 @@ const createSubscription = async (paymentMethodId, uid, priceId,
     let coupon
 
     if(couponId) {
-        coupon = await stripe.coupons.retrieve(couponId)
+        coupon = await getCoupon(couponId)
     }
     
     const user = await admin.auth().getUser(uid)
@@ -51,7 +51,7 @@ const createSubscription = async (paymentMethodId, uid, priceId,
         customerId = customer.id
     }
 
-    if(!coupon) {
+    if(!coupon || (coupon.percent_off && coupon.percent_off < 100.0)) {
         await stripe.paymentMethods.attach(paymentMethodId, {
             customer: customerId
         })
@@ -62,26 +62,21 @@ const createSubscription = async (paymentMethodId, uid, priceId,
                     default_payment_method: paymentMethodId
                 }
             })
+    } else {
+        coupon = null
     }
 
-    let subscription
+    let subData = {
+        customer: customerId,
+        items: [{ price: priceId }],
+        expand: ['latest_invoice.payment_intent']
+    }
     
     if(coupon) {
-        subscription = await stripe.subscriptions.create({
-            customer: customerId,
-            items: [{ price: priceId }],
-            coupon: couponId,
-            expand: ['latest_invoice.payment_intent']
-        })
-    } else {
-        subscription = await stripe.subscriptions.create({
-            customer: customerId,
-            items: [{ price: priceId }],
-            expand: ['latest_invoice.payment_intent']
-        })
+        subData.coupon = couponId
     }
 
-    return subscription
+    return await stripe.subscriptions.create(subData)
 }
 
 const generatePortalUrl = async (customerId) => {
@@ -129,7 +124,7 @@ const updateCustomer = async (sessionId, screenName, twitterId, uid) => {
     return customer
 }
 
-const getSubscriptionStatus = async (uid) => {
+const getSubscriptionStatus = async uid => {
     const result = {}
 
     let customer
@@ -152,10 +147,15 @@ const getSubscriptionStatus = async (uid) => {
     return result
 }
 
+const getCoupon = async couponId => {
+    return await stripe.coupons.retrieve(couponId)
+}
+
 module.exports = {
     createSubscription: createSubscription,
     generatePortalUrl: generatePortalUrl,
     generateCheckoutId: generateCheckoutId,
     getSubscriptionStatus: getSubscriptionStatus,
-    updateCustomer: updateCustomer
+    updateCustomer: updateCustomer,
+    getCoupon: getCoupon
 }
