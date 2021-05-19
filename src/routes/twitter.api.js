@@ -15,6 +15,7 @@ router.get('/stats', async (req, res) => {
   const data = [];
   let maxId;
   
+  //TODO: move to service
   for(let i = 0; i < 5; i++) {
     const tweets = (await twitterService.getUserTimeline(accessToken, accessTokenSecret, maxId)).data
 
@@ -30,8 +31,8 @@ router.get('/stats', async (req, res) => {
   const raw = data.map(tweet => {
     let rts = 0
 
-    if(tweet.full_text) {
-      if (tweet.full_text.startsWith('RT')) {
+    if(tweet.text) {
+      if (tweet.text.startsWith('RT')) {
         rts = 0
       } else {
         rts = tweet.retweet_count
@@ -39,7 +40,7 @@ router.get('/stats', async (req, res) => {
     }
 
     return { 
-      tweet: tweet.full_text,
+      tweet: tweet.text,
       created: tweet.created_at,
       favs: tweet.favorite_count,
       rts: rts
@@ -85,6 +86,41 @@ router.get('/timeline', async (req, res) => {
   const userTimeline = await twitterService.getUserTimeline(req, res)
   
   return res.json(userTimeline.data)
+})
+
+router.get('/followers', async (req, res) => {
+    const accessToken = req.header('X-Access-Token')
+    const accessTokenSecret = req.header('X-Access-Token-Secret')
+
+    const offset = req.query.offset ? parseInt(req.query.offset) : 0
+    
+    const data = []
+    let nextCursor = -1
+    
+    do {
+        const followers = (await twitterService.getFollowers(accessToken, accessTokenSecret, nextCursor)).data
+
+        data.push(...followers.users)
+
+        nextCursor = followers.next_cursor
+    } while(nextCursor !== 0)
+
+    const result = data
+        .filter(follower => {
+            return follower.statuses_count > 0
+        })
+        .map(follower => {
+            const status = follower.status
+            const user = follower.screen_name
+            const created = moment.tz(status.created_at, 'ddd MMM DD HH:mm:ss ZZ YYYY', 'UTC').add((-1 * offset), 'minutes')
+
+            return {
+                user: user,
+                created: created.format('ddd MMM DD HH:mm:ss ZZ YYYY')
+            }
+        })
+
+    return res.json(result)
 })
 
 function transformToLocalTime(time, timeZoneOffset) {
