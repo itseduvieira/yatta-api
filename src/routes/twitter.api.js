@@ -116,6 +116,7 @@ router.get('/followers', async (req, res) => {
 
             return {
                 user: user,
+                avatar: follower.profile_image_url,
                 created: created.format('ddd MMM DD HH:mm:ss ZZ YYYY')
             }
         })

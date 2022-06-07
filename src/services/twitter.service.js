@@ -38,8 +38,7 @@ const getUserTimeline = async (accessToken, accessTokenSecret, maxId) => {
 const getFollowers = async (accessToken, accessTokenSecret, cursor) => {
     const params = { 
         count: 50,
-        // skip_status: true,
-        // include_user_entities: false
+        include_user_entities: false
     }
   
     if(accessToken && accessTokenSecret) {
