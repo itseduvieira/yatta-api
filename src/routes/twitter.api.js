@@ -3,6 +3,7 @@
 const express = require('express')
 const router = express.Router()
 const moment = require('moment-timezone')
+const debug = require('debug')('yat:api')
 
 const twitterService = require('../services/twitter.service')
 
@@ -104,17 +105,25 @@ router.get('/followers', async (req, res) => {
             return follower.lastTweet
         })
         .map(follower => {
+            const created = moment.tz(follower.lastTweet.created_at, 'UTC')
+            const duration = moment.duration(moment().utc().diff(created))
+            const mins = Math.trunc(duration.asMinutes())
+            follower.minutesAgo = mins
+            return follower
+        })
+        .sort((a, b) => {
+            return a.minutesAgo - b.minutesAgo
+        })
+        .map(follower => {
             const status = follower.lastTweet
             const user = follower.username
-            const created = moment.tz(status.created_at, 'UTC').add((-1 * offset), 'minutes')
 
-            const duration = moment.duration(created.diff(moment()));
-            const mins = parseInt(duration.asMinutes());
+            debug(user, status)
 
             return {
                 user: user,
                 avatar: follower.profile_image_url,
-                created: `${mins} minutes ago`
+                created: `${follower.minutesAgo} minute${follower.minutesAgo > 1 ? 's' : ''} ago`,
             }
         })
 

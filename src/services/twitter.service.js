@@ -70,9 +70,12 @@ module.exports.getFollowers = async (accessToken, accessTokenSecret) => {
         followers.push(...json.data)
     } while (paginationToken)
 
+    const startTime = moment().utc().add(-1, 'hours')
+    const endTime = moment().utc().add(-15, 'seconds')
+
     const result = await Promise.all(
         followers.map(async follower => {
-            const lastFiveTweets = await getLastFiveTweets(accessToken, accessTokenSecret, follower)
+            const lastFiveTweets = await getLastFiveTweets(accessToken, accessTokenSecret, follower, startTime, endTime)
             if(lastFiveTweets?.length > 1) {
                 follower.lastTweet = lastFiveTweets[0]
             }
@@ -83,18 +86,17 @@ module.exports.getFollowers = async (accessToken, accessTokenSecret) => {
     return result
 }
 
-const getLastFiveTweets = async (accessToken, accessTokenSecret, follower) => {
-    // https://api.twitter.com/2/users/:id/timelines/reverse_chronological?tweet.fields=created_at&expansions=author_id&user.fields=created_at&max_results=5
-
+const getLastFiveTweets = async (accessToken, accessTokenSecret, follower, startTime, endTime) => {
     const params = new URLSearchParams({
         'tweet.fields': 'created_at',
-        start_time: `${moment().add((-2), 'hours').format('YYYY-MM-DDTHH:mm:ss')}Z`,
+        start_time: startTime.format(),
+        end_time: endTime.format(),
         max_results: 5
     })
 
     const url = `${constants.twitter.api}/users/${follower.id}/tweets?${params}`
     const method = 'get'
-    const response = await fetch(url, { headers: auth({ method, url, }) })
+    const response = await fetch(url, { headers: auth({ method, url, }, accessToken, accessTokenSecret) })
 
     const json = await response.json()
 
