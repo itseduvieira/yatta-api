@@ -95,29 +95,26 @@ router.get('/followers', async (req, res) => {
     const offset = req.query.offset ? parseInt(req.query.offset) : 0
     
     const data = []
-    let nextCursor = -1
-    
-    do {
-        const followers = (await twitterService.getFollowers(accessToken, accessTokenSecret, nextCursor)).data
+    const followers = (await twitterService.getFollowers(accessToken, accessTokenSecret))
 
-        data.push(...followers.users)
-
-        nextCursor = followers.next_cursor
-    } while(nextCursor !== 0)
+    data.push(...followers)
 
     const result = data
         .filter(follower => {
-            return follower.statuses_count > 0
+            return follower.lastTweet
         })
         .map(follower => {
-            const status = follower.status
-            const user = follower.screen_name
-            const created = moment.tz(status.created_at, 'ddd MMM DD HH:mm:ss ZZ YYYY', 'UTC').add((-1 * offset), 'minutes')
+            const status = follower.lastTweet
+            const user = follower.username
+            const created = moment.tz(status.created_at, 'UTC').add((-1 * offset), 'minutes')
+
+            const duration = moment.duration(created.diff(moment()));
+            const mins = parseInt(duration.asMinutes());
 
             return {
                 user: user,
                 avatar: follower.profile_image_url,
-                created: created.format('ddd MMM DD HH:mm:ss ZZ YYYY')
+                created: `${mins} minutes ago`
             }
         })
 

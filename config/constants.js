@@ -8,6 +8,8 @@ module.exports = {
         connectionString: ''
     },
     twitter: {
+        api: 'https://api.twitter.com/2',
+        bearerToken: process.env.BEARER_TOKEN,
         consumerKey: process.env.CONSUMER_KEY,
         consumerSecret: process.env.CONSUMER_SECRET,
         accessToken: process.env.ACCESS_TOKEN,
