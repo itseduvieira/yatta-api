@@ -1,20 +1,31 @@
 'use strict'
 
 const Twitter = require('twit')
+const fetch = require('node-fetch')
+const moment = require('moment-timezone')
+
+const auth = require('../services/auth.service')
 const constants = require('../../config/constants')
 
-const getProfile = async (accessToken, accessTokenSecret) => {
-  const client = new Twitter({
-    consumer_key: constants.twitter.consumerKey,
-    consumer_secret: constants.twitter.consumerSecret,
-    access_token: accessToken ? accessToken : constants.twitter.accessToken,
-    access_token_secret: accessTokenSecret ? accessTokenSecret : constants.twitter.accessTokenSecret
-  })
+
+// const headers = {
+//     headers: {
+//         'Authorization': `Bearer ${constants.twitter.bearerToken}`
+//     }
+// }
+
+module.exports.getProfile = async (accessToken, accessTokenSecret) => {
+    const client = new Twitter({
+        consumer_key: constants.twitter.consumerKey,
+        consumer_secret: constants.twitter.consumerSecret,
+        access_token: accessToken || constants.twitter.accessToken,
+        access_token_secret: accessTokenSecret || constants.twitter.accessTokenSecret
+    })
 
   return await client.get(`account/verify_credentials`)
 }
 
-const getUserTimeline = async (accessToken, accessTokenSecret, maxId) => {
+module.exports.getUserTimeline = async (accessToken, accessTokenSecret, maxId) => {
   const params = { tweet_mode: 'compat', count: 50 }
 
   if(accessToken && accessTokenSecret) {
@@ -28,14 +39,66 @@ const getUserTimeline = async (accessToken, accessTokenSecret, maxId) => {
   const client = new Twitter({
     consumer_key: constants.twitter.consumerKey,
     consumer_secret: constants.twitter.consumerSecret,
-    access_token: accessToken ? accessToken : constants.twitter.accessToken,
-    access_token_secret: accessTokenSecret ? accessTokenSecret : constants.twitter.accessTokenSecret
+    access_token: accessToken || constants.twitter.accessToken,
+    access_token_secret: accessTokenSecret || constants.twitter.accessTokenSecret
   })
 
   return await client.get(`statuses/user_timeline`, params)
 }
 
-module.exports = {
-  getProfile: getProfile,
-  getUserTimeline: getUserTimeline
+module.exports.getFollowers = async (accessToken, accessTokenSecret) => {
+    const followers = []
+    let paginationToken
+
+    do {
+        const params = new URLSearchParams({
+            'user.fields': 'profile_image_url'
+        })
+
+        if (paginationToken) {
+            params.append('pagination_token', paginationToken)
+        }
+
+        const url = `${constants.twitter.api}/users/72183014/followers?${params}`
+        const method = 'get'
+        const response = await fetch(url, { headers: auth({ method, url, }, accessToken, accessTokenSecret) })
+
+        const json = await response.json()
+
+        paginationToken = json.meta.next_token
+
+        followers.push(...json.data)
+    } while (paginationToken)
+
+    const startTime = moment().utc().add(-1, 'hours')
+    const endTime = moment().utc().add(-15, 'seconds')
+
+    const result = await Promise.all(
+        followers.map(async follower => {
+            const lastFiveTweets = await getLastFiveTweets(accessToken, accessTokenSecret, follower, startTime, endTime)
+            if(lastFiveTweets?.length > 1) {
+                follower.lastTweet = lastFiveTweets[0]
+            }
+            return follower
+        })
+    )
+
+    return result
+}
+
+const getLastFiveTweets = async (accessToken, accessTokenSecret, follower, startTime, endTime) => {
+    const params = new URLSearchParams({
+        'tweet.fields': 'created_at',
+        start_time: startTime.format(),
+        end_time: endTime.format(),
+        max_results: 5
+    })
+
+    const url = `${constants.twitter.api}/users/${follower.id}/tweets?${params}`
+    const method = 'get'
+    const response = await fetch(url, { headers: auth({ method, url, }, accessToken, accessTokenSecret) })
+
+    const json = await response.json()
+
+    return json.data
 }

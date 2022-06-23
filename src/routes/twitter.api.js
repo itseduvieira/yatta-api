@@ -3,6 +3,7 @@
 const express = require('express')
 const router = express.Router()
 const moment = require('moment-timezone')
+const debug = require('debug')('yat:api')
 
 const twitterService = require('../services/twitter.service')
 
@@ -15,6 +16,7 @@ router.get('/stats', async (req, res) => {
   const data = [];
   let maxId;
   
+  //TODO: move to service
   for(let i = 0; i < 5; i++) {
     const tweets = (await twitterService.getUserTimeline(accessToken, accessTokenSecret, maxId)).data
 
@@ -30,8 +32,8 @@ router.get('/stats', async (req, res) => {
   const raw = data.map(tweet => {
     let rts = 0
 
-    if(tweet.full_text) {
-      if (tweet.full_text.startsWith('RT')) {
+    if(tweet.text) {
+      if (tweet.text.startsWith('RT')) {
         rts = 0
       } else {
         rts = tweet.retweet_count
@@ -39,7 +41,7 @@ router.get('/stats', async (req, res) => {
     }
 
     return { 
-      tweet: tweet.full_text,
+      tweet: tweet.text,
       created: tweet.created_at,
       favs: tweet.favorite_count,
       rts: rts
@@ -85,6 +87,48 @@ router.get('/timeline', async (req, res) => {
   const userTimeline = await twitterService.getUserTimeline(req, res)
   
   return res.json(userTimeline.data)
+})
+
+router.get('/followers', async (req, res) => {
+    const accessToken = req.header('X-Access-Token')
+    const accessTokenSecret = req.header('X-Access-Token-Secret')
+
+    const offset = req.query.offset ? parseInt(req.query.offset) : 0
+    
+    const data = []
+    const followers = (await twitterService.getFollowers(accessToken, accessTokenSecret))
+
+    data.push(...followers)
+
+    const result = data
+        .filter(follower => {
+            return follower.lastTweet
+        })
+        .map(follower => {
+            const created = moment.tz(follower.lastTweet.created_at, 'UTC')
+            const duration = moment.duration(moment().utc().diff(created))
+            const mins = Math.trunc(duration.asMinutes())
+            follower.minutesAgo = mins
+            return follower
+        })
+        .sort((a, b) => {
+            return a.minutesAgo - b.minutesAgo
+        })
+        .map(follower => {
+            const status = follower.lastTweet
+            const user = follower.username
+            const created = `${follower.minutesAgo > 5 ? follower.minutesAgo : 'a few'} minutes ago`
+            
+            debug(user, status)
+
+            return {
+                user: user,
+                avatar: follower.profile_image_url,
+                created: created,
+            }
+        })
+
+    return res.json(result)
 })
 
 function transformToLocalTime(time, timeZoneOffset) {

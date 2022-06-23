@@ -1,11 +1,60 @@
-image: node:12.18.1
+# This script depends on three environment variables to be set in Bitbucket Pipelines
+# 1. $HEROKU_API_KEY - Local environment var that contains your Heroku account's API key
+# 2. $HEROKU_STAGING - Local environment var that contains your staging app name in Heroku
+# 3. $HEROKU_ENV - Local environment var that contains your production app name in Heroku
+
+image: node:14.15.3
+# Doing a full clone to be able to push back to Heroku.
 clone:
   depth: full
+
 pipelines:
   branches:
+    # When code is pushed to the production branch it is deployed automatically to the production environment.
     master:
       - step:
-          name: Deploy to Heroku
-          deployment: production
+          name: Initialize submodules Generate Tar
           script:
-            - git push https://heroku:$HEROKU_API_KEY@git.heroku.com/$HEROKU_APP_NAME.git HEAD
+            - echo "Generate build"
+            - rm -f /tmp/application.tgz
+            - tar czfv /tmp/application.tgz .
+            - mv /tmp/application.tgz application.tgz
+          artifacts:
+            - application.tgz
+      - step:
+          name: Master App Build Test
+          caches:
+            - node
+          script:
+            - npm run heroku-prebuild
+            - npm run build
+      - step:
+          name: Deploy to Production
+          deployment: Production
+          trigger: manual
+          script:
+          - pipe: atlassian/heroku-deploy:1.2.1
+            variables:
+              HEROKU_API_KEY: $HEROKU_API_KEY
+              HEROKU_APP_NAME: $HEROKU_ENV_PROD
+              ZIP_FILE: "application.tgz"
+    development:
+      - step:
+          name: Initialize submodules Generate Tar
+          script:
+            - echo "Generate build"
+            - rm -f /tmp/application.tgz
+            - tar czfv /tmp/application.tgz .
+            - mv /tmp/application.tgz application.tgz
+          artifacts:
+            - application.tgz
+      - step:
+          name: Deploy to Development
+          deployment: Development
+          trigger: manual
+          script:
+          - pipe: atlassian/heroku-deploy:1.2.1
+            variables:
+              HEROKU_API_KEY: $HEROKU_API_KEY
+              HEROKU_APP_NAME: $HEROKU_ENV_DEV
+              ZIP_FILE: "application.tgz"
