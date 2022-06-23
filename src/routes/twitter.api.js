@@ -117,13 +117,14 @@ router.get('/followers', async (req, res) => {
         .map(follower => {
             const status = follower.lastTweet
             const user = follower.username
-
+            const created = `${follower.minutesAgo > 5 ? follower.minutesAgo : 'a few'} minutes ago`
+            
             debug(user, status)
 
             return {
                 user: user,
                 avatar: follower.profile_image_url,
-                created: `${follower.minutesAgo} minute${follower.minutesAgo > 1 ? 's' : ''} ago`,
+                created: created,
             }
         })
 
