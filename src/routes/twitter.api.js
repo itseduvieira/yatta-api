@@ -27,7 +27,7 @@ router.get('/stats', async (req, res) => {
         const duration = moment.duration(created.diff(moment().utc()))
         const mins = Math.trunc(duration.asMinutes())
 
-        if(mins > 1) throw new Error()
+        if(mins > (60 * 24)) throw new Error()
 
         data.push(...JSON.parse(file))
     } catch (err) {
@@ -125,7 +125,7 @@ router.get('/followers', async (req, res) => {
         const duration = moment.duration(created.diff(moment().utc()))
         const mins = Math.trunc(duration.asMinutes())
 
-        if(mins > (60 * 24)) throw new Error()
+        if(mins > 60) throw new Error()
 
         result = JSON.parse(file)
     } catch (err) {
